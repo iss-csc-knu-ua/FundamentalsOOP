@@ -1,6 +1,9 @@
 #include <iostream>
 #include <vector>
 
+#define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
+#include "doctest.h"
+
 // Function to swap two elements
 void swap(std::vector<int>& arr, int i, int j) {
     int temp = arr[i];
@@ -41,7 +44,7 @@ void printArray(const std::vector<int>& arr) {
     std::cout << std::endl;
 }
 
-int main() {
+int main_manual() {
     std::vector<int> arr = {10, 7, 8, 9, 1, 5};
     
     std::cout << "Original array: ";
@@ -53,4 +56,10 @@ int main() {
     printArray(arr);
     
     return 0;
+}
+
+TEST_CASE("Test sorting for known array") {
+    std::vector<int> arr = {10, 7, 8, 9, 1, 5};
+    quickSort(arr, 0, arr.size() - 1);
+    CHECK(arr == (std::vector<int>){1, 5, 7, 8, 9, 10 });
 }
