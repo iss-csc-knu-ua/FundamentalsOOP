@@ -37,6 +37,27 @@ void quickSort(std::vector<int>& arr, int low, int high) {
     }
 }
 
+// Function to perform selection sort
+void selectionSort(std::vector<int>& arr) {
+    int n = arr.size();
+    
+    // One by one move boundary of unsorted subarray
+    for (int i = 0; i < n - 1; ++i) {
+        // Find the minimum element in unsorted array
+        int minIndex = i;
+        for (int j = i + 1; j < n; ++j) {
+            if (arr[j] < arr[minIndex]) {
+                minIndex = j;
+            }
+        }
+        
+        // Swap the found minimum element with the first element of the unsorted subarray
+        if (minIndex != i) {
+            std::swap(arr[i], arr[minIndex]);
+        }
+    }
+}
+
 // Helper function to print the array
 void printArray(const std::vector<int>& arr) {
     for (int num : arr) {
@@ -61,7 +82,12 @@ int main_manual() {
 
 TEST_CASE("Test sorting for known array") {
     std::vector<int> arr = {10, 7, 8, 9, 1, 5};
-    quickSort(arr, 0, arr.size() - 1);
+    SUBCASE("quicksort") {
+        quickSort(arr, 0, arr.size() - 1);
+    }
+    SUBCASE("selection sort") {
+        selectionSort(arr);
+    }
     CHECK(arr == (std::vector<int>){1, 5, 7, 8, 9, 10 });
 }
 
