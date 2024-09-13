@@ -80,19 +80,30 @@ int main_manual() {
     return 0;
 }
 
-TEST_CASE("Test sorting for known array") {
-    std::vector<int> arr = {10, 7, 8, 9, 1, 5};
+
+void testSorting (std::vector<int>& arr) {
     SUBCASE("quicksort") {
         quickSort(arr, 0, arr.size() - 1);
     }
     SUBCASE("selection sort") {
         selectionSort(arr);
     }
-    CHECK(arr == (std::vector<int>){1, 5, 7, 8, 9, 10 });
 }
 
-TEST_CASE("Test sorting for repeated values") {
-    std::vector<int> arr = {1, 1, 1, 9, 1, 1};
-    quickSort(arr, 0, arr.size() - 1);
-    CHECK(arr == (std::vector<int>){1, 1, 1, 1, 1, 9 });
+
+TEST_CASE("Test sorting for known array") {
+    std::vector<int> arr; 
+    std::vector<int> expected; 
+    SUBCASE("unique values") {
+        arr = {10, 7, 8, 9, 1, 5};
+        expected = {1, 5, 7, 8, 9, 10 };
+        testSorting(arr);
+    }
+    SUBCASE("repeated values") {
+        arr = {1, 1, 1, 9, 1, 1};
+        expected = {1, 1, 1, 1, 1, 9 };
+        testSorting(arr);
+    }
+
+    CHECK(arr == expected);
 }
