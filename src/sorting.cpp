@@ -63,3 +63,9 @@ TEST_CASE("Test sorting for known array") {
     quickSort(arr, 0, arr.size() - 1);
     CHECK(arr == (std::vector<int>){1, 5, 7, 8, 9, 10 });
 }
+
+TEST_CASE("Test sorting for repeated values") {
+    std::vector<int> arr = {1, 1, 1, 9, 1, 1};
+    quickSort(arr, 0, arr.size() - 1);
+    CHECK(arr == (std::vector<int>){1, 1, 1, 1, 1, 9 });
+}
