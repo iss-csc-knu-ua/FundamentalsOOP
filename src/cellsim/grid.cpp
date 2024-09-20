@@ -85,6 +85,43 @@ private:
     std::vector<std::vector<Cell>> cells;
 };
 
+TEST_CASE("Grid initialization and value setting") {
+    Grid grid(3, 3);  // Create a 3x3 grid
+
+    // Initially, all cells should have the default value of 0
+    CHECK(grid.getCellValue(0, 0) == 0);
+    CHECK(grid.getCellValue(1, 1) == 0);
+    CHECK(grid.getCellValue(2, 2) == 0);
+    CHECK(grid.getCellValue(1, 2) == 0);
+}
+
+TEST_CASE("Setting and getting cell values") {
+    Grid grid(3, 3);
+
+    grid.setCellValue(0, 0, 1);
+    grid.setCellValue(1, 1, 2);
+    grid.setCellValue(2, 2, 3);
+
+    CHECK(grid.getCellValue(0, 0) == 1);
+    CHECK(grid.getCellValue(1, 1) == 2);
+    CHECK(grid.getCellValue(2, 2) == 3);
+    CHECK(grid.getCellValue(1, 2) == 0);
+}
+
+TEST_CASE("Boundary checks") {
+    Grid grid(3, 3);
+
+    // Valid cell accesses
+    CHECK_NOTHROW(grid.getCell(0, 0));
+    CHECK_NOTHROW(grid.getCell(2, 2));
+
+    // Invalid cell accesses (should throw std::out_of_range)
+    CHECK_THROWS_AS(grid.getCell(3, 3), std::out_of_range);
+    CHECK_THROWS_AS(grid.getCell(-1, 0), std::out_of_range);
+    CHECK_THROWS_AS(grid.getCell(0, 3), std::out_of_range);
+    CHECK_THROWS_AS(grid.getCell(3, 0), std::out_of_range);
+}
+
 int main(int argc, char** argv) {
     doctest::Context context;
 
