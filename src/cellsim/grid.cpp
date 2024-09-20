@@ -26,6 +26,19 @@ TEST_CASE("empty cell has value 0") {
     CHECK(cell.getValue() == 0);
 }
 
+TEST_CASE("cell constructor sets value") {
+    Cell cell(5);  // Initialize cell with a value of 5
+    CHECK(cell.getValue() == 5);  // Initial value should be 5
+}
+
+TEST_CASE("Set value changes value of cell") {
+    Cell cell;  // Default constructor
+    CHECK(cell.getValue() == 0);  // Default value should be 0
+
+    cell.setValue(10);
+    CHECK(cell.getValue() == 10);  // Value should be updated to 10
+}
+
 class Grid {
 public:
     Grid(int rows, int cols) : rows(rows), cols(cols) {
