@@ -1,6 +1,10 @@
 #include <iostream>
 #include <vector>
 
+#define DOCTEST_CONFIG_IMPLEMENT
+#define DOCTEST_CONFIG_COLORS_NONE
+#include "../doctest.h"
+
 class Cell {
 public:
     Cell(int value = 0) : value(value) {}
@@ -16,6 +20,11 @@ public:
 private:
     int value;
 };
+
+TEST_CASE("empty cell has value 0") {
+    Cell cell;
+    CHECK(cell.getValue() == 0);
+}
 
 class Grid {
 public:
@@ -63,7 +72,18 @@ private:
     std::vector<std::vector<Cell>> cells;
 };
 
-int main() {
+int main(int argc, char** argv) {
+    doctest::Context context;
+
+    context.applyCommandLine(argc, argv);
+
+    int res = context.run(); // run
+
+    if(context.shouldExit()) // important - query flags (and --exit) rely on the user doing this
+        return res;          // propagate the result of the tests
+
+
+
     Grid grid(3, 3);
     
     // Set some values
@@ -74,5 +94,5 @@ int main() {
     // Print the grid
     grid.printGrid();
 
-    return 0;
+    return res;
 }
