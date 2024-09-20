@@ -122,6 +122,14 @@ TEST_CASE("Boundary checks") {
     CHECK_THROWS_AS(grid.getCell(3, 0), std::out_of_range);
 }
 
+TEST_CASE("Get reference to cell object") {
+    Grid grid(3, 3);
+    CHECK(grid.getCellValue(0,0) == 0);
+    grid.getCell(0,0).setValue(123); // set cell value in result of getCell, it should modify value in grid
+    CHECK(grid.getCellValue(0,0) == 123);
+
+}
+
 int main(int argc, char** argv) {
     doctest::Context context;
 
