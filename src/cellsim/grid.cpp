@@ -39,6 +39,15 @@ TEST_CASE("Set value changes value of cell") {
     CHECK(cell.getValue() == 10);  // Value should be updated to 10
 }
 
+// Enum to specify distance types
+enum class DistanceType {
+    Euclidean,
+    Manhattan,
+    Chebyshev,
+};
+
+
+
 class Grid {
 public:
     Grid(int rows, int cols) : rows(rows), cols(cols) {
@@ -69,6 +78,44 @@ public:
     int getCellValue(int row, int col) const {
         return getCell(row, col).getValue();
     }
+
+// Function to calculate the neighborhood based on distance type and distance
+std::vector<Cell> getNeighborhoodByDistance(int row, int col,
+                                             DistanceType distanceType, int distance) {
+    std::vector<Cell> neighborhood;
+
+    for (int r = -distance; r <= distance; ++r) {
+        for (int c = -distance; c <= distance; ++c) {
+            int newRow = row + r;
+            int newCol = col + c;
+
+            // Check if the new position is within bounds
+            if (newRow < 0 || newRow >= rows || newCol < 0 || newCol >= cols) {
+                continue;
+            }
+
+            // Calculate the distance from the center cell to the current cell
+            double d = 0.0;
+
+            if (distanceType == DistanceType::Euclidean) {
+                d = std::sqrt(r * r + c * c);
+            } else if (distanceType == DistanceType::Manhattan) {
+                d = std::abs(r) + std::abs(c);
+            } else if (distanceType == DistanceType::Chebyshev) {
+                d = std::max(std::abs(r), std::abs(c));
+            }
+
+            // If the distance is within the specified range, add to neighborhood
+            if (d <= distance) {
+                neighborhood.push_back(cells[newRow][newCol]);
+            }
+        }
+    }
+
+    return neighborhood;
+}
+
+
 
     void printGrid() const {
         for (const auto& row : cells) {
