@@ -197,6 +197,48 @@ TEST_CASE("Get reference to cell object") {
 
 }
 
+// Helper function to check if a given cell is in the neighborhood
+bool isCellInNeighborhood(const std::vector<std::pair<int, int>>& neighborhood, int row, int col) {
+    return std::find(neighborhood.begin(), neighborhood.end(), std::make_pair(row, col)) != neighborhood.end();
+}
+
+TEST_CASE("getNeighborhoodByDistance function tests") {
+    Grid grid(4, 4);
+    grid.setCellValue(1,1,1);
+
+    // Test Euclidean distance with distance 1
+    auto euclideanNeighbors = grid.getNeighborhoodByDistance(1, 2, DistanceType::Euclidean, 1);
+    CHECK(euclideanNeighbors.size() == 5);
+    CHECK(isCellInNeighborhood(euclideanNeighbors, 1, 2)); // same cell
+    CHECK(isCellInNeighborhood(euclideanNeighbors, 0, 2));
+    CHECK(isCellInNeighborhood(euclideanNeighbors, 2, 2));
+    CHECK(isCellInNeighborhood(euclideanNeighbors, 1, 1));    
+    CHECK(isCellInNeighborhood(euclideanNeighbors, 1, 3));
+    CHECK(!isCellInNeighborhood(euclideanNeighbors, 0, 0)); // Not included
+
+    // Test Manhattan distance with distance 1
+    auto manhattanNeighbors = grid.getNeighborhoodByDistance(1, 2, DistanceType::Manhattan, 1);
+    CHECK(manhattanNeighbors == euclideanNeighbors); // for distance 1, Manhattan and Euclidean should be the same
+
+
+    // Test Chebyshev distance with distance 1
+    auto chebyshevNeighbors = grid.getNeighborhoodByDistance(1, 2, DistanceType::Chebyshev, 1);
+    CHECK(chebyshevNeighbors.size() == 9);
+    CHECK(isCellInNeighborhood(chebyshevNeighbors, 1, 2)); // same cell
+
+    CHECK(isCellInNeighborhood(chebyshevNeighbors, 0, 2));
+    CHECK(isCellInNeighborhood(chebyshevNeighbors, 2, 2));
+    CHECK(isCellInNeighborhood(chebyshevNeighbors, 1, 1));    
+    CHECK(isCellInNeighborhood(chebyshevNeighbors, 1, 3));
+
+    CHECK(isCellInNeighborhood(chebyshevNeighbors, 0, 1));
+    CHECK(isCellInNeighborhood(chebyshevNeighbors, 0, 3));
+    CHECK(isCellInNeighborhood(chebyshevNeighbors, 2, 1));    
+    CHECK(isCellInNeighborhood(chebyshevNeighbors, 2, 3));
+
+    CHECK(!isCellInNeighborhood(chebyshevNeighbors, 0, 0)); // Not included
+}
+
 int main(int argc, char** argv) {
     doctest::Context context;
 
