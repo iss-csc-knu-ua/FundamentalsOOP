@@ -80,9 +80,9 @@ public:
     }
 
 // Function to calculate the neighborhood based on distance type and distance
-std::vector<Cell> getNeighborhoodByDistance(int row, int col,
+std::vector<std::pair<int, int>>getNeighborhoodByDistance(int row, int col,
                                              DistanceType distanceType, int distance) {
-    std::vector<Cell> neighborhood;
+    std::vector<std::pair<int, int>> neighborhood;
 
     for (int r = -distance; r <= distance; ++r) {
         for (int c = -distance; c <= distance; ++c) {
@@ -107,7 +107,7 @@ std::vector<Cell> getNeighborhoodByDistance(int row, int col,
 
             // If the distance is within the specified range, add to neighborhood
             if (d <= distance) {
-                neighborhood.push_back(cells[newRow][newCol]);
+                neighborhood.emplace_back(newRow, newCol);
             }
         }
     }
@@ -125,6 +125,26 @@ std::vector<Cell> getNeighborhoodByDistance(int row, int col,
             std::cout << std::endl;
         }
     }
+
+    // Function to print the grid, marking the neighborhood cells by their coordinates
+void printGridWithNeighborhood(const std::vector<std::pair<int, int>>& neighborhoodCoords,
+                                char mark = '*') {
+    // Create a set of coordinates for the neighborhood cells for quick lookup
+    std::set<std::pair<int, int>> neighborhoodSet(neighborhoodCoords.begin(), neighborhoodCoords.end());
+
+    // Print the grid
+    for (size_t r = 0; r < rows; ++r) {
+        for (size_t c = 0; c < cols; ++c) {
+            // Check if the current cell is in the neighborhood
+            if (neighborhoodSet.find({static_cast<int>(r), static_cast<int>(c)}) != neighborhoodSet.end()) {
+                std::cout << mark; // Mark the neighborhood cell
+            } else {
+                std::cout << cells[r][c].getValue(); // Print the normal cell value
+            }
+        }
+        std::cout << std::endl; // New line after each row
+    }
+}
 
 private:
     int rows;
@@ -189,7 +209,7 @@ int main(int argc, char** argv) {
 
 
 
-    Grid grid(3, 3);
+    Grid grid(7, 7);
     
     // Set some values
     grid.setCellValue(0, 0, 1);
@@ -198,6 +218,9 @@ int main(int argc, char** argv) {
 
     // Print the grid
     grid.printGrid();
+    std::cout<<"neighbors"<<std::endl;
+    auto neighborhood = grid.getNeighborhoodByDistance(2,4,DistanceType::Euclidean,2);
+    grid.printGridWithNeighborhood(neighborhood);
 
     return res;
 }
