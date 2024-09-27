@@ -1,6 +1,8 @@
 #include <iostream>
 #include <vector>
 
+#include <cassert>
+
 #define DOCTEST_CONFIG_IMPLEMENT
 #define DOCTEST_CONFIG_COLORS_NONE
 #include "../doctest.h"
@@ -115,6 +117,39 @@ std::vector<std::pair<int, int>>getNeighborhoodByDistance(int row, int col,
     return neighborhood;
 }
 
+    void update() {
+        std::vector<std::vector<Cell>> newCells = cells; // Copy current state
+
+        for (int r = 0; r < cells.size(); ++r) {
+            for (int c = 0; c < cells[0].size(); ++c) {
+                int aliveNeighbors = 0;
+
+                // Count alive neighbors using Manhattan distance
+                auto neighborhood = getNeighborhoodByDistance(r, c, DistanceType::Chebyshev, 1);
+                for (const auto& neighbor : neighborhood) {
+                    if (cells[neighbor.first][neighbor.second].getValue() == 1) {
+                        aliveNeighbors++;
+                    }
+                }
+
+                // Apply Game of Life rules
+                if (cells[r][c].getValue() == 1) {
+                    // Cell is currently alive
+                    if (aliveNeighbors < 3 || aliveNeighbors > 4) { // if this cell is alive, aliveNeighbors includes itself, so we add 1
+                        newCells[r][c].setValue(0); // Die
+                    }
+                } else {
+                    assert(cells[r][c].getValue() == 0); // all cells should be either 0 (dead) or 1 (alive)
+                    // Cell is currently dead
+                    if (aliveNeighbors == 3) {
+                        newCells[r][c].setValue(1); // Become alive
+                    }
+                }
+            }
+        }
+
+        cells = newCells; // Update to new state
+    }
 
 
     void printGrid() const {
@@ -254,15 +289,22 @@ int main(int argc, char** argv) {
     Grid grid(7, 7);
     
     // Set some values
-    grid.setCellValue(0, 0, 1);
-    grid.setCellValue(1, 1, 2);
-    grid.setCellValue(2, 2, 3);
+    grid.setCellValue(1, 2, 1);
+    grid.setCellValue(1, 3, 1);
+    grid.setCellValue(1, 4, 1);
 
     // Print the grid
     grid.printGrid();
     std::cout<<"neighbors"<<std::endl;
     auto neighborhood = grid.getNeighborhoodByDistance(2,4,DistanceType::Euclidean,2);
     grid.printGridWithNeighborhood(neighborhood);
+
+        // Simulation for 10 generations
+    for (int generation = 0; generation < 10; ++generation) {
+        std::cout << "Generation " << generation << ":\n";
+        grid.printGrid();
+        grid.update();
+     }
 
     return res;
 }
