@@ -274,6 +274,34 @@ TEST_CASE("getNeighborhoodByDistance function tests") {
     CHECK(!isCellInNeighborhood(chebyshevNeighbors, 0, 0)); // Not included
 }
 
+TEST_CASE("blinker has period of 2") {
+    Grid grid(3, 3);
+
+    // vertical
+    grid.setCellValue(0, 1, 1);
+    grid.setCellValue(1, 1, 1);
+    grid.setCellValue(2, 1, 1);
+
+    grid.update();
+
+    // horizontal
+    CHECK(grid.getCellValue(0,1) == 0);
+    CHECK(grid.getCellValue(1,1) == 1);
+    CHECK(grid.getCellValue(2,1) == 0);
+    CHECK(grid.getCellValue(1,0) == 1);
+    CHECK(grid.getCellValue(1,2) == 1); 
+
+    grid.update();
+
+    // back to vertical
+    CHECK(grid.getCellValue(0,1) == 1);
+    CHECK(grid.getCellValue(1,1) == 1);
+    CHECK(grid.getCellValue(2,1) == 1);
+    CHECK(grid.getCellValue(1,0) == 0);
+    CHECK(grid.getCellValue(1,2) == 0);    
+
+}
+
 int main(int argc, char** argv) {
     doctest::Context context;
 
