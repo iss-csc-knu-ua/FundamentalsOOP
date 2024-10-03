@@ -1,5 +1,6 @@
 #include <iostream>
 #include <vector>
+#include <random>
 
 #include <cassert>
 
@@ -151,6 +152,46 @@ std::vector<std::pair<int, int>>getNeighborhoodByDistance(int row, int col,
         cells = newCells; // Update to new state
     }
 
+    void fillGridWithRandomValues(const std::vector<int>& values, const std::vector<double>& probabilities) {
+        // Check that probabilities sum to 1
+        double totalProbability = 0.0;
+        for (double prob : probabilities) {
+            totalProbability += prob;
+        }
+        
+        if (totalProbability != 1.0) {
+            throw std::invalid_argument("Probabilities must sum to 1.");
+        }
+
+        // Create a random number generator
+        std::random_device rd;
+        std::mt19937 gen(rd());
+        std::uniform_real_distribution<> dis(0.0, 1.0);
+        
+        // Create a cumulative distribution based on probabilities
+        std::vector<double> cumulativeProbabilities(probabilities.size());
+        cumulativeProbabilities[0] = probabilities[0];
+        for (size_t i = 1; i < probabilities.size(); ++i) {
+            cumulativeProbabilities[i] = cumulativeProbabilities[i - 1] + probabilities[i];
+        }
+
+        // Fill the grid
+        for (auto& row : cells) {
+            for (auto& cell : row) {
+                double randomValue = dis(gen);
+                int valueToSet = values.back(); // Default to last value
+                
+                for (size_t i = 0; i < cumulativeProbabilities.size(); ++i) {
+                    if (randomValue <= cumulativeProbabilities[i]) {
+                        valueToSet = values[i];
+                        break;
+                    }
+                }
+
+                cell.setValue(valueToSet);
+            }
+        }
+    }
 
     void printGrid() const {
         for (const auto& row : cells) {
@@ -317,18 +358,20 @@ int main(int argc, char** argv) {
     Grid grid(7, 7);
     
     // Set some values
-    grid.setCellValue(1, 2, 1);
-    grid.setCellValue(1, 3, 1);
-    grid.setCellValue(1, 4, 1);
+    // grid.setCellValue(1, 2, 1);
+    // grid.setCellValue(1, 3, 1);
+    // grid.setCellValue(1, 4, 1);
+
+    grid.fillGridWithRandomValues({0, 1}, {0.5, 0.5});
 
     // Print the grid
-    grid.printGrid();
-    std::cout<<"neighbors"<<std::endl;
-    auto neighborhood = grid.getNeighborhoodByDistance(2,4,DistanceType::Euclidean,2);
-    grid.printGridWithNeighborhood(neighborhood);
+    // grid.printGrid();
+    // std::cout<<"neighbors"<<std::endl;
+    // auto neighborhood = grid.getNeighborhoodByDistance(2,4,DistanceType::Euclidean,2);
+    // grid.printGridWithNeighborhood(neighborhood);
 
         // Simulation for 10 generations
-    for (int generation = 0; generation < 10; ++generation) {
+    for (int generation = 0; generation < 30; ++generation) {
         std::cout << "Generation " << generation << ":\n";
         grid.printGrid();
         grid.update();
