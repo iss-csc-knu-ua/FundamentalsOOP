@@ -238,6 +238,17 @@ void printGridWithNeighborhood(const std::vector<std::pair<int, int>>& neighborh
     }
 }
 
+    std::string gridToString() {
+        std::string result;
+        for (const auto& row : cells) {
+            for (const auto& cell : row) {
+                result += std::to_string(cell.getValue()) + " ";
+            }
+            result += "\n";
+        }
+        return result;
+    }
+
 private:
     int rows;
     int cols;
@@ -419,7 +430,9 @@ int main(int argc, char** argv) {
     // auto neighborhood = grid.getNeighborhoodByDistance(2,4,DistanceType::Euclidean,2);
     // grid.printGridWithNeighborhood(neighborhood);
 
-        // Simulation for 10 generations
+    std::string previousState;
+    std::string stateBeforePrevious;
+    
     for (int generation = 0; generation < 30; ++generation) {
         std::cout << "Generation " << generation << ":\n";
         grid.printGrid();
@@ -428,6 +441,17 @@ int main(int argc, char** argv) {
             std::cout<<"simulation ended after " << generation << " steps"<<std::endl;
             break;
         }
+        std::string currentState = grid.gridToString();
+        
+        // Check for repetition with period 2
+        if (generation >= 2 && currentState == stateBeforePrevious) {
+            std::cout << "Simulation ended due to repeating grid state after " << generation << " generations." << std::endl;
+            break;
+        }
+
+        // Update states for the next iteration
+        stateBeforePrevious = previousState;
+        previousState = currentState;
      }
 
     return res;
