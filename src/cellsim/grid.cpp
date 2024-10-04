@@ -20,6 +20,11 @@ public:
         value = newValue;
     }
 
+    // Implementing the equality operator
+    bool operator==(const Cell& other) const {
+        return value == other.value;
+    }
+
 private:
     int value;
 };
@@ -40,6 +45,12 @@ TEST_CASE("Set value changes value of cell") {
 
     cell.setValue(10);
     CHECK(cell.getValue() == 10);  // Value should be updated to 10
+}
+
+TEST_CASE("compare vector of cells") {
+    std::vector<Cell> vector1 { Cell(1), Cell(2), Cell(3)};
+    std::vector<Cell> vector2 { Cell(1), Cell(2), Cell(3)};
+    CHECK(vector1 == vector2);
 }
 
 // Enum to specify distance types
@@ -82,43 +93,44 @@ public:
         return getCell(row, col).getValue();
     }
 
-// Function to calculate the neighborhood based on distance type and distance
-std::vector<std::pair<int, int>>getNeighborhoodByDistance(int row, int col,
-                                             DistanceType distanceType, int distance) {
-    std::vector<std::pair<int, int>> neighborhood;
+    // Function to calculate the neighborhood based on distance type and distance
+    std::vector<std::pair<int, int>>getNeighborhoodByDistance(int row, int col,
+                                                DistanceType distanceType, int distance) {
+        std::vector<std::pair<int, int>> neighborhood;
 
-    for (int r = -distance; r <= distance; ++r) {
-        for (int c = -distance; c <= distance; ++c) {
-            int newRow = row + r;
-            int newCol = col + c;
+        for (int r = -distance; r <= distance; ++r) {
+            for (int c = -distance; c <= distance; ++c) {
+                int newRow = row + r;
+                int newCol = col + c;
 
-            // Check if the new position is within bounds
-            if (newRow < 0 || newRow >= rows || newCol < 0 || newCol >= cols) {
-                continue;
-            }
+                // Check if the new position is within bounds
+                if (newRow < 0 || newRow >= rows || newCol < 0 || newCol >= cols) {
+                    continue;
+                }
 
-            // Calculate the distance from the center cell to the current cell
-            double d = 0.0;
+                // Calculate the distance from the center cell to the current cell
+                double d = 0.0;
 
-            if (distanceType == DistanceType::Euclidean) {
-                d = std::sqrt(r * r + c * c);
-            } else if (distanceType == DistanceType::Manhattan) {
-                d = std::abs(r) + std::abs(c);
-            } else if (distanceType == DistanceType::Chebyshev) {
-                d = std::max(std::abs(r), std::abs(c));
-            }
+                if (distanceType == DistanceType::Euclidean) {
+                    d = std::sqrt(r * r + c * c);
+                } else if (distanceType == DistanceType::Manhattan) {
+                    d = std::abs(r) + std::abs(c);
+                } else if (distanceType == DistanceType::Chebyshev) {
+                    d = std::max(std::abs(r), std::abs(c));
+                }
 
-            // If the distance is within the specified range, add to neighborhood
-            if (d <= distance) {
-                neighborhood.emplace_back(newRow, newCol);
+                // If the distance is within the specified range, add to neighborhood
+                if (d <= distance) {
+                    neighborhood.emplace_back(newRow, newCol);
+                }
             }
         }
+
+        return neighborhood;
     }
 
-    return neighborhood;
-}
-
-    void update() {
+    // returns true if next state is different from previous state, false if they are the same
+    bool update() {
         std::vector<std::vector<Cell>> newCells = cells; // Copy current state
 
         for (int r = 0; r < cells.size(); ++r) {
@@ -148,8 +160,12 @@ std::vector<std::pair<int, int>>getNeighborhoodByDistance(int row, int col,
                 }
             }
         }
+        if (cells == newCells) {
+           return false;
+        }
 
         cells = newCells; // Update to new state
+        return true;
     }
 
     void fillGridWithRandomValues(const std::vector<int>& values, const std::vector<double>& probabilities) {
@@ -323,7 +339,10 @@ TEST_CASE("blinker has period of 2") {
     grid.setCellValue(1, 1, 1);
     grid.setCellValue(2, 1, 1);
 
-    grid.update();
+    bool hasChanged = false;
+
+    hasChanged = grid.update();
+    CHECK(hasChanged); // changed
 
     // horizontal
     CHECK(grid.getCellValue(0,1) == 0);
@@ -332,7 +351,8 @@ TEST_CASE("blinker has period of 2") {
     CHECK(grid.getCellValue(1,0) == 1);
     CHECK(grid.getCellValue(1,2) == 1); 
 
-    grid.update();
+    hasChanged = grid.update();
+    CHECK(hasChanged); // changed
 
     // back to vertical
     CHECK(grid.getCellValue(0,1) == 1);
@@ -340,6 +360,35 @@ TEST_CASE("blinker has period of 2") {
     CHECK(grid.getCellValue(2,1) == 1);
     CHECK(grid.getCellValue(1,0) == 0);
     CHECK(grid.getCellValue(1,2) == 0);    
+
+}
+
+TEST_CASE("block is still life") {
+    Grid grid(4, 4);
+
+    // block without one cell
+    grid.setCellValue(1, 1, 1);
+    grid.setCellValue(1, 2, 1);
+    grid.setCellValue(2, 1, 1);
+
+    bool hasChanged = false;
+
+    hasChanged = grid.update();
+    CHECK(hasChanged); // changed
+
+    // block
+    CHECK(grid.getCellValue(1,1) == 1);
+    CHECK(grid.getCellValue(2,1) == 1);
+    CHECK(grid.getCellValue(1,2) == 1); 
+    CHECK(grid.getCellValue(2,2) == 1); 
+
+    hasChanged = grid.update();
+    CHECK(! hasChanged); // no longer changing
+  
+    CHECK(grid.getCellValue(1,1) == 1);
+    CHECK(grid.getCellValue(2,1) == 1);
+    CHECK(grid.getCellValue(1,2) == 1); 
+    CHECK(grid.getCellValue(2,2) == 1); 
 
 }
 
@@ -374,7 +423,11 @@ int main(int argc, char** argv) {
     for (int generation = 0; generation < 30; ++generation) {
         std::cout << "Generation " << generation << ":\n";
         grid.printGrid();
-        grid.update();
+        bool hasChanged = grid.update();
+        if (!hasChanged) {
+            std::cout<<"simulation ended after " << generation << " steps"<<std::endl;
+            break;
+        }
      }
 
     return res;
