@@ -485,47 +485,52 @@ int main(int argc, char** argv) {
     // grid.setCellValue(1, 2, 1);
     // grid.setCellValue(1, 3, 1);
     // grid.setCellValue(1, 4, 1);
+    int regionsFound = 0;
 
-    grid.fillGridWithRandomValues({0, 1}, {0.5, 0.5});
+    while (regionsFound < 2) {
 
-    // Print the grid
-    // grid.printGrid();
-    // std::cout<<"neighbors"<<std::endl;
-    // auto neighborhood = grid.getNeighborhoodByDistance(2,4,DistanceType::Euclidean,2);
-    // grid.printGridWithNeighborhood(neighborhood);
+        grid.fillGridWithRandomValues({0, 1}, {0.5, 0.5});
 
-    auto regions = grid.getNonInteractingRegions();
-    std::cout<<"Found regions: " << regions.size()<<std::endl;
-    grid.printRegions(regions);
+        // Print the grid
+        // grid.printGrid();
+        // std::cout<<"neighbors"<<std::endl;
+        // auto neighborhood = grid.getNeighborhoodByDistance(2,4,DistanceType::Euclidean,2);
+        // grid.printGridWithNeighborhood(neighborhood);
+
+        auto regions = grid.getNonInteractingRegions();
+        std::cout<<"Found regions: " << regions.size()<<std::endl;
+        grid.printRegions(regions);
 
 
-    std::string previousState;
-    std::string stateBeforePrevious;
-    
-    for (int generation = 0; generation < 30; ++generation) {
-        std::cout << "Generation " << generation << ":\n";
-        grid.printGrid();
-        bool hasChanged = grid.update();
-        if (!hasChanged) {
-            std::cout<<"simulation ended after " << generation << " steps"<<std::endl;
-            break;
-        }
-        std::string currentState = grid.gridToString();
+        std::string previousState;
+        std::string stateBeforePrevious;
         
-        // Check for repetition with period 2
-        if (generation >= 2 && currentState == stateBeforePrevious) {
-            std::cout << "Simulation ended due to repeating grid state after " << generation << " generations." << std::endl;
-            break;
+        for (int generation = 0; generation < 30; ++generation) {
+            std::cout << "Generation " << generation << ":\n";
+            grid.printGrid();
+            bool hasChanged = grid.update();
+            if (!hasChanged) {
+                std::cout<<"simulation ended after " << generation << " steps"<<std::endl;
+                break;
+            }
+            std::string currentState = grid.gridToString();
+            
+            // Check for repetition with period 2
+            if (generation >= 2 && currentState == stateBeforePrevious) {
+                std::cout << "Simulation ended due to repeating grid state after " << generation << " generations." << std::endl;
+                break;
+            }
+
+            // Update states for the next iteration
+            stateBeforePrevious = previousState;
+            previousState = currentState;
         }
 
-        // Update states for the next iteration
-        stateBeforePrevious = previousState;
-        previousState = currentState;
+        regions = grid.getNonInteractingRegions();
+        regionsFound = regions.size();
+        std::cout<<"Found regions: " << regionsFound<<std::endl;
+        grid.printRegions(regions);
     }
-
-    regions = grid.getNonInteractingRegions();
-    std::cout<<"Found regions: " << regions.size()<<std::endl;
-    grid.printRegions(regions);
 
     return res;
 }
