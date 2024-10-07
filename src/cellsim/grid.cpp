@@ -95,7 +95,7 @@ public:
 
     // Function to calculate the neighborhood based on distance type and distance
     std::vector<std::pair<int, int>>getNeighborhoodByDistance(int row, int col,
-                                                DistanceType distanceType, int distance) {
+                                                DistanceType distanceType, int distance) const {
         std::vector<std::pair<int, int>> neighborhood;
 
         for (int r = -distance; r <= distance; ++r) {
@@ -129,6 +129,10 @@ public:
         return neighborhood;
     }
 
+    std::vector<std::pair<int, int>> getNeighbors(int row, int col) const {
+        return getNeighborhoodByDistance(row, col, DistanceType::Chebyshev, 1);
+    }
+
     // returns true if next state is different from previous state, false if they are the same
     bool update() {
         std::vector<std::vector<Cell>> newCells = cells; // Copy current state
@@ -138,7 +142,7 @@ public:
                 int aliveNeighbors = 0;
 
                 // Count alive neighbors using Manhattan distance
-                auto neighborhood = getNeighborhoodByDistance(r, c, DistanceType::Chebyshev, 1);
+                auto neighborhood = getNeighbors(r, c);
                 for (const auto& neighbor : neighborhood) {
                     if (cells[neighbor.first][neighbor.second].getValue() == 1) {
                         aliveNeighbors++;
@@ -209,6 +213,46 @@ public:
         }
     }
 
+    void findRegions(int startX, int startY, std::vector<std::vector<bool>>& visited,
+                     std::vector<std::pair<int, int>>& region) {
+        std::stack<std::pair<int, int>> stack;
+        stack.push({startX, startY});
+        visited[startX][startY] = true;
+
+        while (!stack.empty()) {
+            auto [x, y] = stack.top();
+            stack.pop();
+            region.push_back({x, y});
+
+            for (const auto& neighbor : getNeighbors(x, y)) {
+                int newX = neighbor.first;
+                int newY = neighbor.second;
+
+                if (cells[newX][newY].getValue() && !visited[newX][newY]) {
+                    visited[newX][newY] = true;
+                    stack.push({newX, newY});
+                }
+            }
+        }
+    }
+
+    std::vector<std::vector<std::pair<int, int>>> getNonInteractingRegions() {
+        std::vector<std::vector<std::pair<int, int>>> regions;
+        std::vector<std::vector<bool>> visited(rows, std::vector<bool>(cols, false));
+
+        for (int i = 0; i < rows; ++i) {
+            for (int j = 0; j < cols; ++j) {
+                if (cells[i][j].getValue() && !visited[i][j]) {
+                    std::vector<std::pair<int, int>> region;
+                    findRegions(i, j, visited, region);
+                    regions.push_back(region);
+                }
+            }
+        }
+
+        return regions;
+    }
+
     void printGrid() const {
         for (const auto& row : cells) {
             for (const auto& cell : row) {
@@ -247,6 +291,26 @@ void printGridWithNeighborhood(const std::vector<std::pair<int, int>>& neighborh
             result += "\n";
         }
         return result;
+    }
+
+    void printRegions(const std::vector<std::vector<std::pair<int, int>>>& regions) {
+        std::vector<std::vector<char>> regionGrid(rows, std::vector<char>(cols, '.'));
+
+        char regionChar = 'A';
+        for (const auto& region : regions) {
+            for (const auto& cell : region) {
+                regionGrid[cell.first][cell.second] = regionChar; // Mark the region
+            }
+            regionChar++; // Move to the next character
+        }
+
+        // Output the region grid
+        for (const auto& row : regionGrid) {
+            for (const auto& cell : row) {
+                std::cout << std::setw(2) << cell; // Format output for better visibility
+            }
+            std::cout << std::endl;
+        }
     }
 
 private:
@@ -430,6 +494,11 @@ int main(int argc, char** argv) {
     // auto neighborhood = grid.getNeighborhoodByDistance(2,4,DistanceType::Euclidean,2);
     // grid.printGridWithNeighborhood(neighborhood);
 
+    auto regions = grid.getNonInteractingRegions();
+    std::cout<<"Found regions: " << regions.size()<<std::endl;
+    grid.printRegions(regions);
+
+
     std::string previousState;
     std::string stateBeforePrevious;
     
@@ -452,7 +521,11 @@ int main(int argc, char** argv) {
         // Update states for the next iteration
         stateBeforePrevious = previousState;
         previousState = currentState;
-     }
+    }
+
+    regions = grid.getNonInteractingRegions();
+    std::cout<<"Found regions: " << regions.size()<<std::endl;
+    grid.printRegions(regions);
 
     return res;
 }
