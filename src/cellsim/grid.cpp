@@ -467,6 +467,52 @@ TEST_CASE("block is still life") {
 
 }
 
+TEST_CASE("Test Single Live Cell") {
+    Grid grid(3, 3);
+    grid.setCellValue(1, 1, 1); // Set a non-zero value
+    auto regions = grid.getNonInteractingRegions();
+    CHECK(regions.size() == 1);
+    CHECK(regions[0].size() == 1);
+    CHECK(regions[0][0] == std::make_pair(1, 1));
+}
+
+TEST_CASE("Test Two Separate Regions") {
+    Grid grid(4, 4);
+    grid.setCellValue(0, 1, 1);
+    grid.setCellValue(0, 2, 2);
+    grid.setCellValue(1, 1, 1);
+
+    grid.setCellValue(3, 2, 3);
+    grid.setCellValue(2, 3, 3);
+
+    auto regions = grid.getNonInteractingRegions();
+    //grid.printRegions(regions);
+    CHECK(regions.size() == 2);
+    CHECK(regions[0].size() == 3); // First region (3 cells)
+    CHECK(regions[1].size() == 2); // Second region (2 cells)
+    CHECK(regions[0][0] == std::make_pair(0, 1));
+    CHECK(regions[1][0] == std::make_pair(2, 3));
+}
+
+TEST_CASE("Test Entire Grid is Alive") {
+    Grid grid(2, 2);
+    grid.setCellValue(0, 0, 1);
+    grid.setCellValue(0, 1, 1);
+    grid.setCellValue(1, 0, 1);
+    grid.setCellValue(1, 1, 1);
+
+    auto regions = grid.getNonInteractingRegions();
+    CHECK(regions.size() == 1);
+    CHECK(regions[0].size() == 4); // All cells are "alive"
+}
+
+TEST_CASE("Test No Live Cells") {
+    Grid grid(3, 3);
+    auto regions = grid.getNonInteractingRegions();
+    CHECK(regions.size() == 0); // No regions
+}
+
+
 int main(int argc, char** argv) {
     doctest::Context context;
 
@@ -485,7 +531,7 @@ int main(int argc, char** argv) {
     // grid.setCellValue(1, 2, 1);
     // grid.setCellValue(1, 3, 1);
     // grid.setCellValue(1, 4, 1);
-    int regionsFound = 0;
+    int regionsFound = 2;
 
     while (regionsFound < 2) {
 
