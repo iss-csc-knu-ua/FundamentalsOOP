@@ -61,6 +61,16 @@ enum class DistanceType {
 };
 
 
+class Region {
+public:
+    std::vector<std::pair<int, int>> coordinates;
+
+    void addCell(int row, int col) {
+        coordinates.emplace_back(row, col);
+    }
+};
+
+
 
 class Grid {
 public:
@@ -214,36 +224,37 @@ public:
     }
 
     void findRegions(int startX, int startY, std::vector<std::vector<bool>>& visited,
-                     std::vector<std::pair<int, int>>& region) {
+                     Region& region) {
         std::stack<std::pair<int, int>> stack;
         stack.push({startX, startY});
         visited[startX][startY] = true;
+        region.addCell(startX, startY); // Add starting cell to the region
 
         while (!stack.empty()) {
             auto [x, y] = stack.top();
             stack.pop();
-            region.push_back({x, y});
 
             for (const auto& neighbor : getNeighbors(x, y)) {
                 int newX = neighbor.first;
                 int newY = neighbor.second;
 
-                if (cells[newX][newY].getValue() && !visited[newX][newY]) {
+                if (cells[newX][newY].getValue() != 0 && !visited[newX][newY]) { // Check if the neighbor is alive (non-zero)
                     visited[newX][newY] = true;
+                    region.addCell(newX, newY); // Add to the region
                     stack.push({newX, newY});
                 }
             }
         }
     }
 
-    std::vector<std::vector<std::pair<int, int>>> getNonInteractingRegions() {
-        std::vector<std::vector<std::pair<int, int>>> regions;
+    std::vector<Region> getNonInteractingRegions() {
+        std::vector<Region> regions;
         std::vector<std::vector<bool>> visited(rows, std::vector<bool>(cols, false));
 
         for (int i = 0; i < rows; ++i) {
             for (int j = 0; j < cols; ++j) {
-                if (cells[i][j].getValue() && !visited[i][j]) {
-                    std::vector<std::pair<int, int>> region;
+                if (cells[i][j].getValue() != 0 && !visited[i][j]) { // Check if the cell is "alive" (non-zero value)
+                    Region region;
                     findRegions(i, j, visited, region);
                     regions.push_back(region);
                 }
@@ -293,12 +304,12 @@ void printGridWithNeighborhood(const std::vector<std::pair<int, int>>& neighborh
         return result;
     }
 
-    void printRegions(const std::vector<std::vector<std::pair<int, int>>>& regions) {
+    void printRegions(const std::vector<Region>& regions) {
         std::vector<std::vector<char>> regionGrid(rows, std::vector<char>(cols, '.'));
 
         char regionChar = 'A';
         for (const auto& region : regions) {
-            for (const auto& cell : region) {
+            for (const auto& cell : region.coordinates) {
                 regionGrid[cell.first][cell.second] = regionChar; // Mark the region
             }
             regionChar++; // Move to the next character
@@ -472,8 +483,8 @@ TEST_CASE("Test Single Live Cell") {
     grid.setCellValue(1, 1, 1); // Set a non-zero value
     auto regions = grid.getNonInteractingRegions();
     CHECK(regions.size() == 1);
-    CHECK(regions[0].size() == 1);
-    CHECK(regions[0][0] == std::make_pair(1, 1));
+    CHECK(regions[0].coordinates.size() == 1);
+    CHECK(regions[0].coordinates[0] == std::make_pair(1, 1));
 }
 
 TEST_CASE("Test Two Separate Regions") {
@@ -486,12 +497,11 @@ TEST_CASE("Test Two Separate Regions") {
     grid.setCellValue(2, 3, 3);
 
     auto regions = grid.getNonInteractingRegions();
-    //grid.printRegions(regions);
     CHECK(regions.size() == 2);
-    CHECK(regions[0].size() == 3); // First region (3 cells)
-    CHECK(regions[1].size() == 2); // Second region (2 cells)
-    CHECK(regions[0][0] == std::make_pair(0, 1));
-    CHECK(regions[1][0] == std::make_pair(2, 3));
+    CHECK(regions[0].coordinates.size() == 3); // First region (3 cells)
+    CHECK(regions[1].coordinates.size() == 2); // Second region (2 cells)
+    CHECK(regions[0].coordinates[0] == std::make_pair(0, 1));
+    CHECK(regions[1].coordinates[0] == std::make_pair(2, 3));
 }
 
 TEST_CASE("Test Entire Grid is Alive") {
@@ -503,7 +513,7 @@ TEST_CASE("Test Entire Grid is Alive") {
 
     auto regions = grid.getNonInteractingRegions();
     CHECK(regions.size() == 1);
-    CHECK(regions[0].size() == 4); // All cells are "alive"
+    CHECK(regions[0].coordinates.size() == 4); // All cells are "alive"
 }
 
 TEST_CASE("Test No Live Cells") {
@@ -531,7 +541,7 @@ int main(int argc, char** argv) {
     // grid.setCellValue(1, 2, 1);
     // grid.setCellValue(1, 3, 1);
     // grid.setCellValue(1, 4, 1);
-    int regionsFound = 2;
+    int regionsFound = 0;
 
     while (regionsFound < 2) {
 
