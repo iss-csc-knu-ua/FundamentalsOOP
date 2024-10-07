@@ -73,15 +73,29 @@ public:
 
 
 class Grid {
+private:
+    int rows;
+    int cols;
+    std::vector<std::vector<Cell>> cells;
+
+friend Grid convertRegionToGrid(const Grid& originalGrid, const Region& region);
+
 public:
     Grid(int rows, int cols) : rows(rows), cols(cols) {
         // Initialize the 2D vector with Cell objects
         cells.resize(rows, std::vector<Cell>(cols));
     }
 
+    bool isValidCoordinates(int row, int col) const {
+        if (row < 0 || row >= rows || col < 0 || col >= cols) {
+            return false;
+        } 
+        return true;
+    }
+
     Cell& getCell(int row, int col) {
         // Add bounds checking
-        if (row < 0 || row >= rows || col < 0 || col >= cols) {
+        if (!isValidCoordinates(row,col)) {
             throw std::out_of_range("Cell index out of range");
         }
         return cells[row][col];
@@ -89,7 +103,7 @@ public:
 
     const Cell& getCell(int row, int col) const {
         // Add bounds checking
-        if (row < 0 || row >= rows || col < 0 || col >= cols) {
+        if (!isValidCoordinates(row,col)) {
             throw std::out_of_range("Cell index out of range");
         }
         return cells[row][col];
@@ -102,6 +116,10 @@ public:
     int getCellValue(int row, int col) const {
         return getCell(row, col).getValue();
     }
+
+    int getRows() const { return rows;}
+
+    int getCols() const { return cols;}
 
     // Function to calculate the neighborhood based on distance type and distance
     std::vector<std::pair<int, int>>getNeighborhoodByDistance(int row, int col,
@@ -324,10 +342,7 @@ void printGridWithNeighborhood(const std::vector<std::pair<int, int>>& neighborh
         }
     }
 
-private:
-    int rows;
-    int cols;
-    std::vector<std::vector<Cell>> cells;
+
 };
 
 TEST_CASE("Grid initialization and value setting") {
@@ -522,6 +537,114 @@ TEST_CASE("Test No Live Cells") {
     CHECK(regions.size() == 0); // No regions
 }
 
+Grid convertRegionToGrid(const Grid& originalGrid, const Region& region) {
+    // Calculate the size of the new grid based on the region
+    int maxRow = -1, maxCol = -1;
+    int minRow = originalGrid.getRows(), minCol = originalGrid.getCols();
+    if (region.coordinates.empty()) {
+        return Grid(0,0); // empty grid - no cells
+    }
+
+    // Determine the bounding box of the region
+    for (const auto& coord : region.coordinates) {
+        if (!originalGrid.isValidCoordinates(coord.first, coord.second)) { continue; }
+        minRow = std::min(minRow, coord.first);
+        minCol = std::min(minCol, coord.second);
+        maxRow = std::max(maxRow, coord.first);
+        maxCol = std::max(maxCol, coord.second);
+    }
+
+    if (minRow > originalGrid.getRows()-1 || minCol > originalGrid.getCols()-1) {
+        return Grid(0,0); // all cells in region outside borders of grid
+    }
+
+    // Create a new grid for the region
+    Grid regionGrid(maxRow - minRow + 1, maxCol - minCol + 1);
+
+    // Populate the new grid with cells from the original grid that are in the region
+    for (const auto& coord : region.coordinates) {
+        int row = coord.first - minRow; // Adjust row index
+        int col = coord.second - minCol; // Adjust col index
+        if (!regionGrid.isValidCoordinates(row, col)) {continue;}
+        
+        // Assuming originalGrid has valid cells for the given coordinates
+        regionGrid.cells[row][col] = originalGrid.cells[coord.first][coord.second];
+    }
+
+    return regionGrid;
+}
+
+TEST_CASE("Test convertRegionToGrid function") {
+    // Setup an original grid
+    Grid originalGrid(4, 4);
+    originalGrid.setCellValue(0, 0, 1);
+    originalGrid.setCellValue(0, 1, 2);
+    originalGrid.setCellValue(1, 0, 3);
+    originalGrid.setCellValue(1, 1, 4);
+    originalGrid.setCellValue(2, 1, 5);
+    originalGrid.setCellValue(3, 0, 6);
+    originalGrid.setCellValue(3, 3, 7);
+
+    SUBCASE("Normal case with a region covering part of the grid") {
+        Region region1;
+        region1.addCell(0, 0);
+        region1.addCell(1, 1);
+        region1.addCell(2, 1);
+
+        Grid regionGrid1 = convertRegionToGrid(originalGrid, region1);
+
+        CHECK(regionGrid1.getRows() == 3);
+        CHECK(regionGrid1.getCols() == 2);
+        CHECK(regionGrid1.getCellValue(0, 0) == 1); // (0,0)
+        CHECK(regionGrid1.getCellValue(1, 1) == 4); // (1,1)
+        CHECK(regionGrid1.getCellValue(2, 1) == 5); // (2,1)
+        // cells not in region get values 0, even if present in original grid
+        CHECK(regionGrid1.getCellValue(1, 0) == 0);
+        CHECK(originalGrid.getCellValue(1, 0) == 3);
+    }
+
+    SUBCASE("Edge case with empty region") {
+        Region emptyRegion;
+        Grid emptyGrid = convertRegionToGrid(originalGrid, emptyRegion);
+        
+        CHECK(emptyGrid.getRows() == 0);
+        CHECK(emptyGrid.getCols() == 0);
+    }
+
+    SUBCASE("Region with cells at the edges of the grid") {
+        Region region2;
+        region2.addCell(0, 0);
+        region2.addCell(3, 3);
+
+        Grid regionGrid2 = convertRegionToGrid(originalGrid, region2);
+
+        CHECK(regionGrid2.getRows() == 4);
+        CHECK(regionGrid2.getCols() == 4);
+        CHECK(regionGrid2.getCellValue(0, 0) == 1); // (0,0)
+        CHECK(regionGrid2.getCellValue(3, 3) == 7); // (3,3)
+    }
+
+    SUBCASE("Region that is completely outside of the original grid") {
+        Region region3;
+        region3.addCell(5, 5);
+        Grid regionGrid3 = convertRegionToGrid(originalGrid, region3);
+
+        CHECK(regionGrid3.getRows() == 0);
+        CHECK(regionGrid3.getCols() == 0);
+    }
+
+    SUBCASE("Region with some (but not all) cells outside of the original grid") {
+        Region region;
+        region.addCell(2, 1);
+        region.addCell(5, 5);
+        Grid regionGrid = convertRegionToGrid(originalGrid, region);
+
+        CHECK(regionGrid.getRows() == 1);
+        CHECK(regionGrid.getCols() == 1);
+        CHECK(regionGrid.getCellValue(0, 0) == 5); // the only cell from region that is within original grid
+    }
+}
+
 
 int main(int argc, char** argv) {
     doctest::Context context;
@@ -586,6 +709,15 @@ int main(int argc, char** argv) {
         regionsFound = regions.size();
         std::cout<<"Found regions: " << regionsFound<<std::endl;
         grid.printRegions(regions);
+        for (const auto& region: regions) {
+            std::cout<<"Region grid"<<std::endl;
+            Grid regionGrid = convertRegionToGrid(grid, region);
+            regionGrid.printGrid();
+            std::cout<<"Region grid"<<std::endl;
+            regionGrid.update();
+            regionGrid.printGrid();
+
+        }
     }
 
     return res;
