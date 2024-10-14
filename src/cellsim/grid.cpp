@@ -651,6 +651,14 @@ private:
     std::unordered_map<std::string, int> gridMap;
 
 public:
+
+    size_t size() const {
+        return gridMap.size();
+    }
+    int& operator[](const Grid& grid) {
+        return gridMap[grid.gridToString()];
+    }
+
     // Adds a new grid or increments the count of an existing grid
     void addGrid(const Grid& grid) {
         std::string gridString = grid.gridToString();
@@ -704,9 +712,9 @@ public:
         }
 
         // Handle the last grid in the file
-        if (!currentGrid.empty()) {
-            gridMap[currentGrid] = count;
-        }
+        // if (!currentGrid.empty()) {
+        //     gridMap[currentGrid] = count;
+        // }
 
         file.close();
     }
@@ -718,6 +726,66 @@ public:
         }
     }
 };
+
+
+TEST_CASE("GridStorage functionality") {
+    GridStorage storage;
+    Grid grid1(2,2); 
+    grid1.setCellValue(0,1,1);
+    grid1.setCellValue(1,0,1);
+    Grid grid2(1,3);
+    grid2.setCellValue(0,2,1);
+    
+    storage.addGrid(grid1);
+    storage.addGrid(grid1); // Adding grid1 again
+    storage.addGrid(grid2);
+
+    SUBCASE("Adding grids and checking counts") {
+
+
+    }
+
+    SUBCASE("Saving and loading from file") {
+
+        // Save to a temporary file
+        const std::string filename = "test_grids.txt";
+        storage.saveToFile(filename);
+
+        // Create a new storage object to load the file
+        GridStorage newStorage;
+        newStorage.loadFromFile(filename);
+
+        // Check loaded data
+        CHECK(newStorage.size() == 2);
+        CHECK(newStorage[grid1] == 2);
+        CHECK(newStorage[grid2] == 1);
+
+        // Clean up the temporary file
+        std::remove(filename.c_str());
+    }
+
+    SUBCASE("Display function output") {
+
+        std::ostringstream oss;
+        std::streambuf* original = std::cout.rdbuf(oss.rdbuf());
+
+        storage.displayGrids(); // Capture output to stringstream
+
+        std::cout.rdbuf(original); // Restore original cout
+
+        std::string output = oss.str();
+        CHECK(output.find("Grid:") != std::string::npos);
+        CHECK(output.find("Count: 2") != std::string::npos);
+        CHECK(output.find("Count: 1") != std::string::npos);
+        CHECK(output.find(grid1.gridToString()) != std::string::npos);
+        CHECK(output.find(grid2.gridToString()) != std::string::npos);
+    }
+
+    // grid1 should have count 2, grid2 should have count 1
+    CHECK(storage.size() == 2);
+    CHECK(storage[grid1] == 2);
+    CHECK(storage[grid2] == 1);
+}
 
 
 int main(int argc, char** argv) {
