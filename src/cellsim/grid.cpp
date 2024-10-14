@@ -665,6 +665,15 @@ public:
         gridMap[gridString]++;
     }
 
+    //Overload the << operator for writing to a stream
+    friend std::ostream& operator<<(std::ostream& out, const GridStorage& storage) {
+        for (const auto& entry : storage.gridMap) {
+            out << entry.first; // Write the entire grid string; it always ends with \n 
+            out << "count: " << entry.second << "\n"; // Store instance count
+        }
+        return out;
+    }
+
     // Saves all unique grids to a file
     void saveToFile(const std::string& filename) const {
         std::ofstream file(filename);
@@ -673,12 +682,28 @@ public:
             return;
         }
 
-        for (const auto& entry : gridMap) {
-            file << entry.first; // Write the entire grid string; it always ends with \n 
-            file << "count: " << entry.second << "\n"; // Store instance count
-        }
+        file << *this;
 
         file.close();
+    }
+
+    // Overload the >> operator for reading from a stream
+    friend std::istream& operator>>(std::istream& in_stream, GridStorage& storage) {
+        std::string line;
+        std::string currentGrid;
+
+        while (std::getline(in_stream, line)) {
+            if (line.find("count:") == 0) {
+                int count = std::stoi(line.substr(7)); // Parse the count
+                if (!currentGrid.empty()) {
+                    storage.gridMap[currentGrid] = count; // Store the grid with its count
+                }
+                currentGrid.clear(); // Reset for the next grid
+            } else {
+                currentGrid += line+"\n"; // Append the grid line
+            }
+        }
+        return in_stream;
     }
 
     // Loads grids from a file
@@ -691,30 +716,8 @@ public:
             return;
         }
 
-        std::string line;
-        std::string currentGrid;
-        int count = 0;
+        file >> *this;
 
-        while (std::getline(file, line)) {
-            if (line.find("count:") == 0) {
-                count = std::stoi(line.substr(7)); // Parse the count
-                if (!currentGrid.empty()) {
-                    gridMap[currentGrid] = count; // Store the grid with its count
-                }
-                
-                currentGrid.clear(); // Reset for the next grid
-            } else {
-                // if (!currentGrid.empty()) {
-                //     currentGrid += "\n"; // Add newline for multiline grid
-                // }
-                currentGrid += line+"\n"; // Append the grid line
-            }
-        }
-
-        // Handle the last grid in the file
-        // if (!currentGrid.empty()) {
-        //     gridMap[currentGrid] = count;
-        // }
 
         file.close();
     }
@@ -735,9 +738,12 @@ TEST_CASE("GridStorage functionality") {
     grid1.setCellValue(1,0,1);
     Grid grid2(1,3);
     grid2.setCellValue(0,2,1);
-    
+
+    CHECK(storage.size()==0); // empty storage
     storage.addGrid(grid1);
+    CHECK(storage.size()==1); 
     storage.addGrid(grid1); // Adding grid1 again
+    CHECK(storage.size()==1); 
     storage.addGrid(grid2);
 
     SUBCASE("Adding grids and checking counts") {
