@@ -1,5 +1,6 @@
 #include <iostream>
 #include <vector>
+#include <unordered_map>
 #include <random>
 
 #include <cassert>
@@ -311,7 +312,7 @@ void printGridWithNeighborhood(const std::vector<std::pair<int, int>>& neighborh
     }
 }
 
-    std::string gridToString() {
+    std::string gridToString() const {
         std::string result;
         for (const auto& row : cells) {
             for (const auto& cell : row) {
@@ -645,6 +646,79 @@ TEST_CASE("Test convertRegionToGrid function") {
     }
 }
 
+class GridStorage {
+private:
+    std::unordered_map<std::string, int> gridMap;
+
+public:
+    // Adds a new grid or increments the count of an existing grid
+    void addGrid(const Grid& grid) {
+        std::string gridString = grid.gridToString();
+        gridMap[gridString]++;
+    }
+
+    // Saves all unique grids to a file
+    void saveToFile(const std::string& filename) const {
+        std::ofstream file(filename);
+        if (!file) {
+            std::cerr << "Error opening file for writing." << std::endl;
+            return;
+        }
+
+        for (const auto& entry : gridMap) {
+            file << entry.first; // Write the entire grid string; it always ends with \n 
+            file << "count: " << entry.second << "\n"; // Store instance count
+        }
+
+        file.close();
+    }
+
+    // Loads grids from a file
+    void loadFromFile(const std::string& filename, bool errorOnMissingFile=true) {
+        std::ifstream file(filename);
+        if (!file) {
+            if (errorOnMissingFile) {
+                std::cerr << "Error opening file for reading." << std::endl;
+            }
+            return;
+        }
+
+        std::string line;
+        std::string currentGrid;
+        int count = 0;
+
+        while (std::getline(file, line)) {
+            if (line.find("count:") == 0) {
+                count = std::stoi(line.substr(7)); // Parse the count
+                if (!currentGrid.empty()) {
+                    gridMap[currentGrid] = count; // Store the grid with its count
+                }
+                
+                currentGrid.clear(); // Reset for the next grid
+            } else {
+                // if (!currentGrid.empty()) {
+                //     currentGrid += "\n"; // Add newline for multiline grid
+                // }
+                currentGrid += line+"\n"; // Append the grid line
+            }
+        }
+
+        // Handle the last grid in the file
+        if (!currentGrid.empty()) {
+            gridMap[currentGrid] = count;
+        }
+
+        file.close();
+    }
+
+    // Displays all unique grids and their counts
+    void displayGrids() const {
+        for (const auto& entry : gridMap) {
+            std::cout << "Grid:\n" << entry.first << "\nCount: " << entry.second << std::endl;
+        }
+    }
+};
+
 
 int main(int argc, char** argv) {
     doctest::Context context;
@@ -665,6 +739,9 @@ int main(int argc, char** argv) {
     // grid.setCellValue(1, 3, 1);
     // grid.setCellValue(1, 4, 1);
     int regionsFound = 0;
+
+    GridStorage storage;
+    storage.loadFromFile("regions_found.txt",false); // no error when file is missing - just start with empty storage
 
     while (regionsFound < 2) {
 
@@ -712,6 +789,7 @@ int main(int argc, char** argv) {
         for (const auto& region: regions) {
             std::cout<<"Region grid"<<std::endl;
             Grid regionGrid = convertRegionToGrid(grid, region);
+            storage.addGrid(regionGrid);
             regionGrid.printGrid();
             std::cout<<"Region grid"<<std::endl;
             regionGrid.update();
@@ -719,6 +797,9 @@ int main(int argc, char** argv) {
 
         }
     }
+    std::cout<<"regions found:"<<std::endl;
+    storage.displayGrids();
+    storage.saveToFile("regions_found.txt");
 
     return res;
 }
