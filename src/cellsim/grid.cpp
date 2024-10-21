@@ -858,27 +858,27 @@ std::string showContext(const std::string& str1, size_t position) {
     return outStream.str();
 }
 
-bool compareStrings(const std::string& str1, const std::string& str2) {
+bool compareStrings(const std::string& str1, const std::string& str2, std::ostream& outStream = std::cout) {
     size_t minLength = std::min(str1.length(), str2.length());
 
     for (size_t i = 0; i < minLength; ++i) {
         if (str1[i] != str2[i]) {
-            std::cout << "Strings differ at position " << i << ":\n";
-            std::cout << "Character in str1: '" << representChar(str1[i]) << "'\n";
-            std::cout << "Character in str2: '" << representChar(str2[i]) << "'\n";
-            std::cout << "Context: ";
+            outStream << "Strings differ at position " << i << ":\n";
+            outStream << "Character in str1: '" << representChar(str1[i]) << "'\n";
+            outStream << "Character in str2: '" << representChar(str2[i]) << "'\n";
+            outStream << "Context: ";
             
             // Print context before and after the differing character
-            std::cout<< showContext(str1, i) << " vs " << showContext(str2,i);
-            std::cout << std::endl;
+            outStream<< showContext(str1, i) << " vs " << showContext(str2,i);
+            outStream << std::endl;
             return false;
         }
     }
 
     // Check for length difference
     if (str1.length() != str2.length()) {
-        std::cout << "Strings differ in length:\n";
-        std::cout << "str1 length: " << str1.length() << ", str2 length: " << str2.length() << std::endl;
+        outStream << "Strings differ in length:\n";
+        outStream << "str1 length: " << str1.length() << ", str2 length: " << str2.length() << std::endl;
         return false;
     }
 
@@ -932,15 +932,21 @@ TEST_CASE("GridStorage operations using streams") {
     // Testing the output operator <<
     std::ostringstream outStream;
     outStream << storage;
-    std::cout<<"|"<<outStream.str()<<"|"<<std::endl;
 
+    std::ostringstream compareResults;
     bool isInitialOrder = compareStrings( outStream.str(),
                                         "0 1 0 \n1 1 1 \n0 0 1 \ncount: 2\n"
-                                        "1 0 1 \n0 1 0 \n1 1 0 \ncount: 1\n");
+                                        "1 0 1 \n0 1 0 \n1 1 0 \ncount: 1\n",
+                                        compareResults);                                   
     bool isReverseOrder = compareStrings( outStream.str(),
                                         "1 0 1 \n0 1 0 \n1 1 0 \ncount: 1\n"
-                                        "0 1 0 \n1 1 1 \n0 0 1 \ncount: 2\n");
-    bool isValid = isInitialOrder || isReverseOrder;                                           
+                                        "0 1 0 \n1 1 1 \n0 0 1 \ncount: 2\n",
+                                        compareResults);
+    bool isValid = isInitialOrder || isReverseOrder;  
+
+    if (! isValid) {
+        std::cout<<compareResults.str();
+    }                                         
 
     CHECK(isValid);
 
@@ -967,6 +973,7 @@ int main(int argc, char** argv) {
     if(context.shouldExit()) // important - query flags (and --exit) rely on the user doing this
         return res;          // propagate the result of the tests
 
+    return res;
 
 
     Grid grid(7, 7);
