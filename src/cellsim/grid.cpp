@@ -391,6 +391,32 @@ TEST_CASE("Get reference to cell object") {
 
 }
 
+TEST_CASE("Grid to string conversion - Grid::gridToString() method") {
+    Grid grid(2, 3); // Create a 2x3 grid
+
+    // Test the default grid (all cells initialized to 0)
+    CHECK(grid.gridToString() == "0 0 0 \n0 0 0 \n");
+
+    // Set some values
+    grid.setCellValue(0, 0, 1);
+    grid.setCellValue(0, 1, 2);
+    grid.setCellValue(1, 2, 3);
+
+    // Test the grid after setting values
+    CHECK(grid.gridToString() == "1 2 0 \n0 0 3 \n");
+
+    // Set all values to 4
+    grid.setCellValue(0, 0, 4);
+    grid.setCellValue(0, 1, 4);
+    grid.setCellValue(0, 2, 4);
+    grid.setCellValue(1, 0, 4);
+    grid.setCellValue(1, 1, 4);
+    grid.setCellValue(1, 2, 4);
+
+    // Test the grid after setting all cells to 4
+    CHECK(grid.gridToString() == "4 4 4 \n4 4 4 \n");
+}
+
 // Helper function to check if a given cell is in the neighborhood
 bool isCellInNeighborhood(const std::vector<std::pair<int, int>>& neighborhood, int row, int col) {
     return std::find(neighborhood.begin(), neighborhood.end(), std::make_pair(row, col)) != neighborhood.end();
