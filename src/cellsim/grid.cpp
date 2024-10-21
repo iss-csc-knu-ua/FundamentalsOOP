@@ -794,6 +794,143 @@ TEST_CASE("GridStorage functionality") {
 }
 
 
+std::string representChar(char c) {
+    switch (c) {
+        case '\n': return "\\n";
+        case '\t': return "\\t";
+        case '\\': return "\\\\";
+        case '\"': return "\\\"";
+        default: return std::string(1, c); // Return the character itself
+    }
+}
+
+std::string representChar(const std::string& str) {
+    std::string result;
+    for (char c : str) {
+        result += representChar(c);
+    }
+    return result;
+}
+
+std::string showContext(const std::string& str1, size_t position) {
+    std::ostringstream outStream;
+    outStream<<'"';
+    if (position > 5) {
+        outStream << "..." << representChar(str1.substr(position - 5, 5));
+    } else {
+        outStream << representChar(str1.substr(0, position));
+    }
+
+    outStream << "[" << representChar(str1[position]) << "]";
+    if (position < str1.length() - 1) {
+        outStream << representChar(str1.substr(position + 1, 5));
+        if (position + 5 < str1.length() - 1) {
+            outStream << "...";
+        }
+    }
+    outStream << '"';
+    return outStream.str();
+}
+
+bool compareStrings(const std::string& str1, const std::string& str2) {
+    size_t minLength = std::min(str1.length(), str2.length());
+
+    for (size_t i = 0; i < minLength; ++i) {
+        if (str1[i] != str2[i]) {
+            std::cout << "Strings differ at position " << i << ":\n";
+            std::cout << "Character in str1: '" << representChar(str1[i]) << "'\n";
+            std::cout << "Character in str2: '" << representChar(str2[i]) << "'\n";
+            std::cout << "Context: ";
+            
+            // Print context before and after the differing character
+            std::cout<< showContext(str1, i) << " vs " << showContext(str2,i);
+            std::cout << std::endl;
+            return false;
+        }
+    }
+
+    // Check for length difference
+    if (str1.length() != str2.length()) {
+        std::cout << "Strings differ in length:\n";
+        std::cout << "str1 length: " << str1.length() << ", str2 length: " << str2.length() << std::endl;
+        return false;
+    }
+
+    // Strings are equal
+    return true;
+}
+
+TEST_CASE("GridStorage operations using streams") {
+    GridStorage storage;
+
+    // Creating grids using setCellValue
+    Grid grid1(3, 3);
+    grid1.setCellValue(0, 0, 0);
+    grid1.setCellValue(0, 1, 1);
+    grid1.setCellValue(0, 2, 0);
+    grid1.setCellValue(1, 0, 1);
+    grid1.setCellValue(1, 1, 1);
+    grid1.setCellValue(1, 2, 1);
+    grid1.setCellValue(2, 0, 0);
+    grid1.setCellValue(2, 1, 0);
+    grid1.setCellValue(2, 2, 1);
+
+    Grid grid2(3, 3);
+    grid2.setCellValue(0, 0, 1);
+    grid2.setCellValue(0, 1, 0);
+    grid2.setCellValue(0, 2, 1);
+    grid2.setCellValue(1, 0, 0);
+    grid2.setCellValue(1, 1, 1);
+    grid2.setCellValue(1, 2, 0);
+    grid2.setCellValue(2, 0, 1);
+    grid2.setCellValue(2, 1, 1);
+    grid2.setCellValue(2, 2, 0);
+
+    CHECK(storage.size() == 0);
+
+    // Adding first grid
+    storage.addGrid(grid1);
+    CHECK(storage.size() == 1);
+    CHECK(storage[grid1] == 1);
+
+    // Adding the same grid again
+    storage.addGrid(grid1);
+    CHECK(storage.size() == 1);
+    CHECK(storage[grid1] == 2);
+
+    // Adding second grid
+    storage.addGrid(grid2);
+    CHECK(storage.size() == 2);
+    CHECK(storage[grid2] == 1);
+
+    // Testing the output operator <<
+    std::ostringstream outStream;
+    outStream << storage;
+    std::cout<<"|"<<outStream.str()<<"|"<<std::endl;
+
+    bool isInitialOrder = compareStrings( outStream.str(),
+                                        "0 1 0 \n1 1 1 \n0 0 1 \ncount: 2\n"
+                                        "1 0 1 \n0 1 0 \n1 1 0 \ncount: 1\n");
+    bool isReverseOrder = compareStrings( outStream.str(),
+                                        "1 0 1 \n0 1 0 \n1 1 0 \ncount: 1\n"
+                                        "0 1 0 \n1 1 1 \n0 0 1 \ncount: 2\n");
+    bool isValid = isInitialOrder || isReverseOrder;                                           
+
+    CHECK(isValid);
+
+    // Testing the input operator >>
+    std::istringstream inStream("0 1 0 \n1 1 1 \n0 0 1 \ncount: 3\n"
+                                 "1 0 1 \n0 1 0 \n1 1 0 \ncount: 1\n");
+    GridStorage newStorage;
+    inStream >> newStorage;
+
+    CHECK(newStorage.size() == 2);
+    CHECK(newStorage[grid1] == 3);
+    CHECK(newStorage[grid2] == 1);
+
+}
+
+
 int main(int argc, char** argv) {
     doctest::Context context;
 
