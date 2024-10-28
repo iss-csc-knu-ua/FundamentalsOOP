@@ -5,6 +5,7 @@
 #include "../doctest.h"
 
 #include "grid.h"
+#include "grid_storage.h"
 
 int main(int argc, char** argv) {
     doctest::Context context;
