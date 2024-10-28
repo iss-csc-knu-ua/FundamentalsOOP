@@ -946,7 +946,8 @@ TEST_CASE("GridStorage operations using streams") {
 
     if (! isValid) {
         std::cout<<compareResults.str();
-    }                                         
+        std::cout.flush(); // to be sure that contents are displayed, because we don't need std::endl here
+    }                                        
 
     CHECK(isValid);
 
