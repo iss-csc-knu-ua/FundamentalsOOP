@@ -476,8 +476,15 @@ Grid convertRegionToGrid(const Grid& originalGrid, const Region& region) {
     // Calculate the size of the new grid based on the region
     int maxRow = -1, maxCol = -1;
     int minRow = originalGrid.getRows(), minCol = originalGrid.getCols();
+    int resultRows=0, resultCols=0;
+    bool isEmpty = false;
     if (region.coordinates.empty()) {
-        return Grid(0,0); // empty grid - no cells
+        //return Grid(0,0); // empty grid - no cells
+
+        // to help compiler produce code with NRVO, we replace return temporary with return named object
+        isEmpty = true;
+        goto grid_create;
+        
     }
 
     // Determine the bounding box of the region
@@ -490,20 +497,30 @@ Grid convertRegionToGrid(const Grid& originalGrid, const Region& region) {
     }
 
     if (minRow > originalGrid.getRows()-1 || minCol > originalGrid.getCols()-1) {
-        return Grid(0,0); // all cells in region outside borders of grid
-    }
-
-    // Create a new grid for the region
-    Grid regionGrid(maxRow - minRow + 1, maxCol - minCol + 1);
-
-    // Populate the new grid with cells from the original grid that are in the region
-    for (const auto& coord : region.coordinates) {
-        int row = coord.first - minRow; // Adjust row index
-        int col = coord.second - minCol; // Adjust col index
-        if (!regionGrid.isValidCoordinates(row, col)) {continue;}
+        //return Grid(0,0); // all cells in region outside borders of grid
         
-        // Assuming originalGrid has valid cells for the given coordinates
-        regionGrid.cells[row][col] = originalGrid.cells[coord.first][coord.second];
+        // to help compiler produce code with NRVO, we replace return temporary with return named object
+        isEmpty = true;
+        goto grid_create;
+
+    }
+    resultRows = maxRow - minRow + 1;
+    resultCols = maxCol - minCol + 1;
+
+grid_create:
+    // Create a new grid for the region
+    Grid regionGrid(resultRows, resultCols);
+
+    if (!isEmpty) {
+        // Populate the new grid with cells from the original grid that are in the region
+        for (const auto& coord : region.coordinates) {
+            int row = coord.first - minRow; // Adjust row index
+            int col = coord.second - minCol; // Adjust col index
+            if (!regionGrid.isValidCoordinates(row, col)) {continue;}
+            
+            // Assuming originalGrid has valid cells for the given coordinates
+            regionGrid.cells[row][col] = originalGrid.cells[coord.first][coord.second];
+        }
     }
 
     return regionGrid;
