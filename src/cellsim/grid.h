@@ -14,17 +14,9 @@
 
 #include "helper.h"
 #include "cell.h"
+#include "update.h"
 
 
-
-
-
-// Enum to specify distance types
-enum class DistanceType {
-    Euclidean,
-    Manhattan,
-    Chebyshev,
-};
 
 
 class Region {
@@ -43,13 +35,21 @@ private:
     int rows;
     int cols;
     std::vector<std::vector<Cell>> cells;
+    NeighborhoodCalculator neighborhoodCalculator; // Neighborhood logic
+    Updater updater;
 
 friend Grid convertRegionToGrid(const Grid& originalGrid, const Region& region);
 
 public:
-    Grid(int rows, int cols) : rows(rows), cols(cols) {
+    Grid(int rows, int cols) : rows(rows), cols(cols), 
+                                neighborhoodCalculator{rows, cols}, updater{neighborhoodCalculator} {
         // Initialize the 2D vector with Cell objects
         cells.resize(rows, std::vector<Cell>(cols));
+    }
+
+    Grid(const Grid& other) : rows(other.rows), cols(other.cols), 
+                                neighborhoodCalculator{rows, cols}, updater{neighborhoodCalculator} {
+        cells = other.cells;                            
     }
 
     bool isValidCoordinates(int row, int col) const {
@@ -90,74 +90,17 @@ public:
     // Function to calculate the neighborhood based on distance type and distance
     std::vector<std::pair<int, int>>getNeighborhoodByDistance(int row, int col,
                                                 DistanceType distanceType, int distance) const {
-        std::vector<std::pair<int, int>> neighborhood;
-
-        for (int r = -distance; r <= distance; ++r) {
-            for (int c = -distance; c <= distance; ++c) {
-                int newRow = row + r;
-                int newCol = col + c;
-
-                // Check if the new position is within bounds
-                if (newRow < 0 || newRow >= rows || newCol < 0 || newCol >= cols) {
-                    continue;
-                }
-
-                // Calculate the distance from the center cell to the current cell
-                double d = 0.0;
-
-                if (distanceType == DistanceType::Euclidean) {
-                    d = std::sqrt(r * r + c * c);
-                } else if (distanceType == DistanceType::Manhattan) {
-                    d = std::abs(r) + std::abs(c);
-                } else if (distanceType == DistanceType::Chebyshev) {
-                    d = std::max(std::abs(r), std::abs(c));
-                }
-
-                // If the distance is within the specified range, add to neighborhood
-                if (d <= distance) {
-                    neighborhood.emplace_back(newRow, newCol);
-                }
-            }
-        }
-
-        return neighborhood;
+        return neighborhoodCalculator.getNeighborhoodByDistance(row, col, distanceType, distance);
     }
 
-    std::vector<std::pair<int, int>> getNeighbors(int row, int col) const {
-        return getNeighborhoodByDistance(row, col, DistanceType::Chebyshev, 1);
-    }
+    // std::vector<std::pair<int, int>> getNeighbors(int row, int col) const {
+    //     return getNeighborhoodByDistance(row, col, DistanceType::Chebyshev, 1);
+    // }
 
     // returns true if next state is different from previous state, false if they are the same
     bool update() {
-        std::vector<std::vector<Cell>> newCells = cells; // Copy current state
+        std::vector<std::vector<Cell>> newCells = updater.update(cells); // Copy current state
 
-        for (int r = 0; r < cells.size(); ++r) {
-            for (int c = 0; c < cells[0].size(); ++c) {
-                int aliveNeighbors = 0;
-
-                // Count alive neighbors using Manhattan distance
-                auto neighborhood = getNeighbors(r, c);
-                for (const auto& neighbor : neighborhood) {
-                    if (cells[neighbor.first][neighbor.second].getValue() == 1) {
-                        aliveNeighbors++;
-                    }
-                }
-
-                // Apply Game of Life rules
-                if (cells[r][c].getValue() == 1) {
-                    // Cell is currently alive
-                    if (aliveNeighbors < 3 || aliveNeighbors > 4) { // if this cell is alive, aliveNeighbors includes itself, so we add 1
-                        newCells[r][c].setValue(0); // Die
-                    }
-                } else {
-                    assert(cells[r][c].getValue() == 0); // all cells should be either 0 (dead) or 1 (alive)
-                    // Cell is currently dead
-                    if (aliveNeighbors == 3) {
-                        newCells[r][c].setValue(1); // Become alive
-                    }
-                }
-            }
-        }
         if (cells == newCells) {
            return false;
         }
@@ -218,7 +161,7 @@ public:
             auto [x, y] = stack.top();
             stack.pop();
 
-            for (const auto& neighbor : getNeighbors(x, y)) {
+            for (const auto& neighbor : neighborhoodCalculator.getNeighbors(x, y)) {
                 int newX = neighbor.first;
                 int newY = neighbor.second;
 
